@@ -1,7 +1,7 @@
 import threading
 import socket
 
-SERVER_HOST = "localhost"  #Put public ip of server
+SERVER_HOST = "localhost"  # Put the public IP of the server
 SERVER_PORT = 12345
 
 CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,7 +13,7 @@ def receive_message():
     while True:
         try:
             message = CLIENT.recv(1024).decode("utf-8")
-            if message == "NICKNAME":  
+            if message == "NICKNAME":
                 CLIENT.send(nickname.encode("utf-8"))
             else:
                 print(message)
@@ -26,7 +26,7 @@ def write_message():
     while True:
         try:
             message = input()
-            CLIENT.send(f"{nickname}: {message}".encode("utf-8"))
+            CLIENT.send(message.encode("utf-8"))
         except Exception as e:
             print(f"Error encountered: {e}")
             CLIENT.close()
