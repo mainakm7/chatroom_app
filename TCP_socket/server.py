@@ -1,48 +1,81 @@
 import threading
 import socket
 
-HOST = "localhost" 
+HOST = "localhost"
 PORT = 12345
 
 SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 SERVER.bind((HOST, PORT))
 SERVER.listen()
 
-clients = {}  # Changed to a dictionary to map nicknames to clients
+clients = {}  # Dictionary to map nicknames to clients
+admin_addresses = ["localhost"]
 
 def broadcast_msg(message):
-    for nickname, client in clients.items():
+    for client, _ in clients.values():
         try:
             client.send(message.encode("utf-8"))
         except Exception as e:
-            print(f"Error sending message to {nickname}: {e}")
+            print(f"Error broadcasting message: {e}")
+
+def add_admin(address, nickname):
+    try:
+        admin_addresses.append(address)
+        broadcast_msg(f"{nickname} is promoted to an admin")
+    except Exception as e:
+        print(f"Error adding admin: {e}")
 
 def send_private_msg(message, sender_nickname, recipient_nickname):
-    recipient_client = clients.get(recipient_nickname)
+    recipient_client, _ = clients.get(recipient_nickname, (None, None))
     if recipient_client:
         try:
             recipient_client.send(f"Private from {sender_nickname}: {message}".encode("utf-8"))
         except Exception as e:
             print(f"Error sending private message to {recipient_nickname}: {e}")
     else:
-        sender_client = clients.get(sender_nickname)
+        sender_client, _ = clients.get(sender_nickname, (None, None))
         if sender_client:
             sender_client.send(f"{recipient_nickname} is not connected.".encode("utf-8"))
 
-def client_handler(client, nickname):
+def admin_kick(kick_nickname):
+    kick_client, _ = clients.get(kick_nickname, (None, None))
+    if kick_client:
+        try:
+            kick_client.close()
+        except Exception as e:
+            print(f"Error kicking client {kick_nickname}: {e}")
+        del clients[kick_nickname]
+        broadcast_msg(f"{kick_nickname} has been kicked from the chat")
+
+def client_handler(client, address, nickname):
     while True:
         try:
             message = client.recv(1024).decode("utf-8")
-            if message.startswith("/private"):
+            if not message:
+                raise Exception("Client disconnected")
+
+            if message.startswith("/kick"):
+                if address[0] in admin_addresses:
+                    parts = message.split(' ')
+                    kick_nickname = parts[1]
+                    if kick_nickname in clients:
+                        admin_kick(kick_nickname)
+                    else:
+                        client.send("Nickname not found".encode("utf-8"))
+                else:
+                    client.send("Only admins have /kick privileges".encode("utf-8"))
+
+            elif message.startswith("/private"):
                 parts = message.split(' ', 2)
                 recipient_nickname = parts[1]
                 private_message = parts[2]
                 send_private_msg(private_message, nickname, recipient_nickname)
             else:
                 broadcast_msg(f"{nickname}: {message}")
+
         except Exception as e:
             print(f"Error handling client {nickname}: {e}")
-            clients.pop(nickname)
+            clients.pop(nickname, None)
             client.close()
             broadcast_msg(f"{nickname} has left the chat")
             break
@@ -57,17 +90,21 @@ def main():
             client.send("NICKNAME".encode("utf-8"))
             nickname = client.recv(1024).decode("utf-8")
 
-            clients[nickname] = client
+            while nickname in clients:
+                client.send("NICKNAME in use, please change".encode("utf-8"))
+                nickname = client.recv(1024).decode("utf-8")
+
+            clients[nickname] = (client, address)
             print(f"Nickname of the client is {nickname}")
 
             broadcast_msg(f"{nickname} joined the chat")
 
-            client_thread = threading.Thread(target=client_handler, args=(client, nickname))
+            client_thread = threading.Thread(target=client_handler, args=(client, address, nickname))
             client_thread.start()
     except KeyboardInterrupt:
         print("Server is shutting down.")
     finally:
-        for client in clients.values():
+        for client, _ in clients.values():
             client.close()
         SERVER.close()
 
