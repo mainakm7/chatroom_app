@@ -1,7 +1,7 @@
 import threading
 import socket
 
-HOST = "localhost"
+HOST = "localhost" 
 PORT = 12345
 
 SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -10,13 +10,12 @@ SERVER.listen()
 
 clients = {}  # Changed to a dictionary to map nicknames to clients
 
-def broadcast_msg(message, sender_nickname):
+def broadcast_msg(message):
     for nickname, client in clients.items():
-        if nickname != sender_nickname:
-            try:
-                client.send(message.encode("utf-8"))
-            except Exception as e:
-                print(f"Error sending message to {nickname}: {e}")
+        try:
+            client.send(message.encode("utf-8"))
+        except Exception as e:
+            print(f"Error sending message to {nickname}: {e}")
 
 def send_private_msg(message, sender_nickname, recipient_nickname):
     recipient_client = clients.get(recipient_nickname)
@@ -40,12 +39,12 @@ def client_handler(client, nickname):
                 private_message = parts[2]
                 send_private_msg(private_message, nickname, recipient_nickname)
             else:
-                broadcast_msg(f"{nickname}: {message}", nickname)
+                broadcast_msg(f"{nickname}: {message}")
         except Exception as e:
             print(f"Error handling client {nickname}: {e}")
             clients.pop(nickname)
             client.close()
-            broadcast_msg(f"{nickname} has left the chat", nickname)
+            broadcast_msg(f"{nickname} has left the chat")
             break
 
 def main():
@@ -61,7 +60,7 @@ def main():
             clients[nickname] = client
             print(f"Nickname of the client is {nickname}")
 
-            broadcast_msg(f"{nickname} joined the chat", nickname)
+            broadcast_msg(f"{nickname} joined the chat")
 
             client_thread = threading.Thread(target=client_handler, args=(client, nickname))
             client_thread.start()
