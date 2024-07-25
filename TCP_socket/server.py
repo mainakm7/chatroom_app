@@ -1,7 +1,7 @@
 import threading
 import socket
 
-HOST = "localhost"
+HOST = "192.168.1.156"
 PORT = 12345
 
 SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,27 +64,30 @@ def client_handler(client, address, nickname):
                         client.send("Nickname not found".encode("utf-8"))
                 else:
                     client.send("Only admins have /kick privileges".encode("utf-8"))
-            
-            if message.startswith("/listusers"):
+
+            elif message.startswith("/listusers"):
                 if address[0] in admin_addresses:
                     users = list(clients.keys())
                     client.send(f"All users: {users}".encode("utf-8"))
                 else:
                     client.send("Only admins have /listusers privileges".encode("utf-8"))
-                    
-            if message.startswith("/listadmins"):
+
+            elif message.startswith("/listadmins"):
                 if address[0] in admin_addresses:
-                    admins = [nickname for nickname,_,address in clients.items() if address in admin_addresses]
+                    admins = [nickname for nickname, (client, addr) in clients.items() if addr[0] in admin_addresses]
                     client.send(f"All admins: {admins}".encode("utf-8"))
                 else:
                     client.send("Only admins have /listadmins privileges".encode("utf-8"))
-                        
 
             elif message.startswith("/private"):
                 parts = message.split(' ', 2)
-                recipient_nickname = parts[1]
-                private_message = parts[2]
-                send_private_msg(private_message, nickname, recipient_nickname)
+                if len(parts) >= 3:
+                    recipient_nickname = parts[1]
+                    private_message = parts[2]
+                    send_private_msg(private_message, nickname, recipient_nickname)
+                else:
+                    client.send("Invalid /private command format. Use /private <recipient> <message>".encode("utf-8"))
+
             else:
                 broadcast_msg(f"{nickname}: {message}")
 
