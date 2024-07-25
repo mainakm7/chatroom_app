@@ -3,7 +3,7 @@ import socket
 import tkinter as tk
 from tkinter import scrolledtext, simpledialog
 
-SERVER_HOST = "192.168.1.156"  # Change to the server's public IP if needed
+SERVER_HOST = "localhost"  # Change to the server's public IP if needed
 SERVER_PORT = 12345
 
 class Client:
