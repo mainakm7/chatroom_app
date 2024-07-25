@@ -75,7 +75,7 @@ To get started with the chatroom app, follow these steps:
 
 - The chatroom allows admins based on IP. Admins can use some special commands:
 
-    ```bash
+    ```
     /kick nickname    # to kick user based on username 
     /listusers        # to list all users
     /listadmins       # to list all admins
@@ -84,7 +84,7 @@ To get started with the chatroom app, follow these steps:
 
 - All users can send public messages or private messages to specific users:
 
-    ```bash
+    ```
     /private nickname msg
     ```
 
