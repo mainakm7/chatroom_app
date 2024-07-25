@@ -64,6 +64,21 @@ def client_handler(client, address, nickname):
                         client.send("Nickname not found".encode("utf-8"))
                 else:
                     client.send("Only admins have /kick privileges".encode("utf-8"))
+            
+            if message.startswith("/listusers"):
+                if address[0] in admin_addresses:
+                    users = list(clients.keys())
+                    client.send(f"All users: {users}".encode("utf-8"))
+                else:
+                    client.send("Only admins have /listusers privileges".encode("utf-8"))
+                    
+            if message.startswith("/listadmins"):
+                if address[0] in admin_addresses:
+                    admins = [nickname for nickname,_,address in clients.items() if address in admin_addresses]
+                    client.send(f"All admins: {admins}".encode("utf-8"))
+                else:
+                    client.send("Only admins have /listadmins privileges".encode("utf-8"))
+                        
 
             elif message.startswith("/private"):
                 parts = message.split(' ', 2)
