@@ -58,12 +58,24 @@ def client_handler(client, address, nickname):
                 if address[0] in admin_addresses:
                     parts = message.split(' ')
                     kick_nickname = parts[1]
-                    if kick_nickname in clients:
+                    if kick_nickname in clients.keys():
                         admin_kick(kick_nickname)
                     else:
                         client.send("Nickname not found".encode("utf-8"))
                 else:
                     client.send("Only admins have /kick privileges".encode("utf-8"))
+                    
+            elif message.startswith("/addadmin"):
+                if address[0] in admin_addresses:
+                    parts = message.split(' ')
+                    admin_nickname = parts[1]
+                    if admin_nickname in clients.keys():
+                        _, admin_address = clients[admin_nickname]
+                        add_admin(address=admin_address[0], nickname=admin_nickname)
+                    else:
+                        client.send("Nickname not found".encode("utf-8"))
+                else:
+                    client.send("Only admins have /addadmin privileges".encode("utf-8"))
 
             elif message.startswith("/listusers"):
                 if address[0] in admin_addresses:
