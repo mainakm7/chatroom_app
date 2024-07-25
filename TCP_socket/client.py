@@ -1,7 +1,7 @@
 import threading
 import socket
 
-SERVER_HOST = "localhost"   # Put the public IP of the server
+SERVER_HOST = "localhost"  # Change this to the public IP of the server
 SERVER_PORT = 12345
 
 CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -10,10 +10,14 @@ CLIENT.connect((SERVER_HOST, SERVER_PORT))
 nickname = input("Choose a nickname: ")
 
 def receive_message():
+    global nickname
     while True:
         try:
             message = CLIENT.recv(1024).decode("utf-8")
             if message == "NICKNAME":
+                CLIENT.send(nickname.encode("utf-8"))
+            elif message == "NICKNAME in use, please change":
+                nickname = input("Choose another nickname: ")
                 CLIENT.send(nickname.encode("utf-8"))
             else:
                 print(message)
@@ -35,6 +39,7 @@ def write_message():
 def main():
     receive_thread = threading.Thread(target=receive_message)
     receive_thread.start()
+    
     write_thread = threading.Thread(target=write_message)
     write_thread.start()
 
