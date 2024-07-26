@@ -77,11 +77,14 @@ To get started with the chatroom app, follow these steps:
 
     ```
     /kick nickname    # to kick user based on username 
-    /listusers        # to list all users
     /listadmins       # to list all admins
     /addadmin nickname # to add a user as an admin
     ```
 
+    ```
+    /listusers        # to list all users - Available to all users
+    ```
+    
 - All users can send public messages or private messages to specific users:
 
     ```

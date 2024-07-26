@@ -22,7 +22,7 @@ class Client:
         # Start the receiving messages thread
         self.receive_thread = threading.Thread(target=self.receive_msg)
         self.receive_thread.start()
-
+        
         # Start the GUI in the main thread
         self.gui()
 
@@ -42,24 +42,43 @@ class Client:
 
     def gui(self):
         self.chatbox = tk.Tk()
-        self.chatbox.geometry("800x800")
+        self.chatbox.geometry("800x600")
         self.chatbox.title(f"Welcome to the chatroom: {self._nickname}")
         
-        self.chatlabel = tk.Label(self.chatbox, text="All chat", font=("Arial", 12))
-        self.chatlabel.pack(padx=10, pady=10)
+        self.chatframe = tk.Frame(self.chatbox)
+        self.chatframe.pack(expand=True, fill="both", padx=5, pady=5)
+        self.chatframe.columnconfigure(0, weight=1)
+        self.chatframe.columnconfigure(1, weight=1)
         
-        self.chat_area = scrolledtext.ScrolledText(self.chatbox)
-        self.chat_area.pack(padx=10, pady=10)
+        # All chat widget
+        self.chatlabel = tk.Label(self.chatframe, text="All chat", font=("Arial", 12))
+        self.chatlabel.grid(row=0, column=0, padx=5, pady=5)
+        
+        self.chat_area = scrolledtext.ScrolledText(self.chatframe)
+        self.chat_area.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         self.chat_area.config(state="disabled")
         
-        self.msglabel = tk.Label(self.chatbox, text="Your messages here:", font=("Arial", 12))
-        self.msglabel.pack(padx=10, pady=10)
+        # Private chat widget
+        self.pvtchatlabel = tk.Label(self.chatframe, text="Private chat", font=("Arial", 12))
+        self.pvtchatlabel.grid(row=0, column=1, padx=5, pady=5)
         
-        self.msg_area = tk.Text(self.chatbox, height=10)
-        self.msg_area.pack(padx=10, pady=10)
+        self.pvtchat_area = scrolledtext.ScrolledText(self.chatframe)
+        self.pvtchat_area.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+        self.pvtchat_area.config(state="disabled")
         
-        self.button = tk.Button(self.chatbox, text="Send Msg", font=("Arial", 10), command=self.write_msg)
-        self.button.pack(padx=10, pady=10)
+        # Message input frame
+        self.msgframe = tk.Frame(self.chatbox)
+        self.msgframe.pack(fill="x", padx=5, pady=5)
+        
+        self.msglabel = tk.Label(self.msgframe, text="Your messages here:", font=("Arial", 12))
+        self.msglabel.pack(anchor="w")
+        
+        self.msg_area = tk.Text(self.msgframe, height=4)
+        self.msg_area.pack(fill="x", padx=5, pady=5)
+        
+        # Send button
+        self.button = tk.Button(self.chatbox, text="Send All Msg", font=("Arial", 10), command=self.write_msg)
+        self.button.pack(padx=5, pady=5)
         
         self.gui_done = True
         self.chatbox.protocol("WM_DELETE_WINDOW", self.stop)
@@ -72,30 +91,38 @@ class Client:
                 if msg == "NICKNAME":
                     self._client.send(self._nickname.encode("utf-8"))
                 elif msg == "NICKNAME in use, please change":
-                    # Update the nickname
                     self._nickname = self.new_nickname()
                     self._client.send(self._nickname.encode("utf-8"))
-                    
-                    # Recreate GUI in the main thread
-                    self.chatbox.after(0, self.restart_gui)
-
+                    if self.chatbox is not None:
+                        self.chatbox.after(0, self.restart_gui)
+                elif msg.startswith("Private from"):
+                    if self.chatbox is not None:
+                        self.chatbox.after(0, self.display_private_msg, msg)
                 else:
-                    if self.gui_done:
-                        self.chatbox.after(0, self.update_chat_area, msg)
+                    if self.chatbox is not None:
+                        self.chatbox.after(0, self.display_msg, msg)
             except Exception as e:
                 print(f"Error occurred while receiving msg: {e}")
                 self.stop()
                 break
     
-    def update_chat_area(self, msg):
-        self.chat_area.config(state="normal")
-        self.chat_area.insert("end", msg + "\n")
-        self.chat_area.yview("end")
-        self.chat_area.config(state="disabled")
+    def display_msg(self, msg):
+        if self.gui_done:
+            self.chat_area.config(state="normal")
+            self.chat_area.insert("end", msg + "\n")
+            self.chat_area.yview("end")
+            self.chat_area.config(state="disabled")
+    
+    def display_private_msg(self, msg):
+        if self.gui_done:
+            self.pvtchat_area.config(state="normal")
+            self.pvtchat_area.insert("end", msg + "\n")
+            self.pvtchat_area.yview("end")
+            self.pvtchat_area.config(state="disabled")
     
     def restart_gui(self):
         if self.chatbox:
-            self.chatbox.quit()  # Exit the mainloop
+            self.chatbox.quit()
             self.chatbox.destroy()
         self.gui()
     
@@ -111,9 +138,14 @@ class Client:
         self.running = False
         self.stop_event.set()
         if self.chatbox:
-            self.chatbox.quit()  # Ensure the mainloop is exited
+            self.chatbox.quit()
             self.chatbox.destroy()
-        self._client.close()
+        if self._client:
+            try:
+                self._client.shutdown(socket.SHUT_RDWR)
+                self._client.close()
+            except Exception as e:
+                print(f"Error occurred while closing the socket: {e}")
         exit(0)
 
 if __name__ == "__main__":

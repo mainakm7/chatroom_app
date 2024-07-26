@@ -78,11 +78,9 @@ def client_handler(client, address, nickname):
                     client.send("Only admins have /addadmin privileges".encode("utf-8"))
 
             elif message.startswith("/listusers"):
-                if address[0] in admin_addresses:
-                    users = list(clients.keys())
-                    client.send(f"All users: {users}".encode("utf-8"))
-                else:
-                    client.send("Only admins have /listusers privileges".encode("utf-8"))
+                users = list(clients.keys())
+                client.send(f"All users: {users}".encode("utf-8"))
+                
 
             elif message.startswith("/listadmins"):
                 if address[0] in admin_addresses:
